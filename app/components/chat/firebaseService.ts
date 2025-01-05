@@ -1,14 +1,13 @@
-import { chatHistoryRef } from './firebaseConfig';
-import { push, onValue, ref, set, getDatabase } from "firebase/database";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { firebaseConfig } from "./firebaseConfig";
 
-export const saveMessage = async (userId: string, message: string, sender: 'user' | 'assistant') => {
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+export const saveMessage = async (message: any) => {
   try {
-    await push(chatHistoryRef, {
-      userId: userId,
-      message: message,
-      sender: sender,
-      timestamp: new Date().toISOString()
-    });
+    await addDoc(collection(db, "messages"), message);
   } catch (error) {
     console.error("Error saving message to Firebase:", error);
   }
@@ -16,23 +15,8 @@ export const saveMessage = async (userId: string, message: string, sender: 'user
 
 export const saveChatHistory = async (chatId: string, messages: any[]) => {
   try {
-    const db = getDatabase();
-    const chatRef = ref(db, `chatHistory/${chatId}`);
-    await set(chatRef, { messages });
+    await addDoc(collection(db, "chatHistory"), { chatId, messages });
   } catch (error) {
     console.error("Error saving chat history to Firebase:", error);
   }
-};
-
-export const getChatHistory = (userId: string, callback: (data: any) => void) => {
-  onValue(chatHistoryRef, (snapshot) => {
-    const history: any = [];
-    snapshot.forEach((childSnapshot) => {
-      const chat = childSnapshot.val();
-      if (chat.userId === userId) {
-        history.push(chat);
-      }
-    });
-    callback(history);
-  });
 };
