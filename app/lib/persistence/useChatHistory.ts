@@ -1,20 +1,15 @@
-  import { useLoaderData, useNavigate, useSearchParams } from '@remix-run/react';
-  import { useState, useEffect } from 'react';
-  import { atom } from 'nanostores';
-  import type { Message } from 'ai';
-  import { toast } from 'react-toastify';
-  import { workbenchStore } from '../../lib/stores/workbench';
-  import { logStore } from '../../lib/stores/logs'; // Import logStore
-  import {
-    getMessages,
-    getNextId,
-    getUrlId,
-    openDatabase,
-    setMessages,
-    duplicateChat,
-    createChatFromMessages,
-  } from './db';
-  import { saveMessage, saveChatHistory } from '../../components/chat/firebaseService';
+import { useLoaderData, useNavigate, useSearchParams } from '@remix-run/react';
+import { useState, useEffect } from 'react';
+import { atom } from 'nanostores';
+import type { Message } from 'ai';
+import { toast } from 'react-toastify';
+import { workbenchStore } from '../../lib/stores/workbench';
+import { logStore } from '../../lib/stores/logs';
+import { getMessages, getNextId, getUrlId, openDatabase, setMessages, duplicateChat, createChatFromMessages } from './db';
+import { saveChatHistory } from '../../components/chat/firebaseService';
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { firebaseConfig } from '../../components/chat/firebaseConfig';
 import { auth } from '../../lib/webcontainer/auth.client';
 
 export interface ChatHistoryItem {
@@ -26,6 +21,9 @@ export interface ChatHistoryItem {
 }
 
 const persistenceEnabled = !process.env.VITE_DISABLE_PERSISTENCE;
+
+const app = initializeApp(firebaseConfig);
+const dbFirebase = getFirestore(app);
 
 export const db = persistenceEnabled ? await openDatabase() : undefined;
 
@@ -84,7 +82,7 @@ export function useChatHistory() {
     ready: !mixedId || ready,
     initialMessages,
     storeMessageHistory: async (messages: Message[]) => {
-      if (!db || messages.length === 0) {
+      if (!db || messages.length === 0 || !dbFirebase) {
         return;
       }
 
@@ -171,11 +169,6 @@ export function useChatHistory() {
 }
 
 function navigateChat(nextId: string) {
-  /**
-   * FIXME: Using the intended navigate function causes a rerender for <Chat /> that breaks the app.
-   *
-   * `navigate(`/chat/${nextId}`, { replace: true });`
-   */
   const url = new URL(window.location.href);
   url.pathname = `/chat/${nextId}`;
 
