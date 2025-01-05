@@ -1,19 +1,21 @@
-import { useLoaderData, useNavigate, useSearchParams } from '@remix-run/react';
-import { useState, useEffect } from 'react';
-import { atom } from 'nanostores';
-import type { Message } from 'ai';
-import { toast } from 'react-toastify';
-import { workbenchStore } from '~/lib/stores/workbench';
-import { logStore } from '~/lib/stores/logs'; // Import logStore
-import {
-  getMessages,
-  getNextId,
-  getUrlId,
-  openDatabase,
-  setMessages,
-  duplicateChat,
-  createChatFromMessages,
-} from './db';
+  import { useLoaderData, useNavigate, useSearchParams } from '@remix-run/react';
+  import { useState, useEffect } from 'react';
+  import { atom } from 'nanostores';
+  import type { Message } from 'ai';
+  import { toast } from 'react-toastify';
+  import { workbenchStore } from '../../lib/stores/workbench';
+  import { logStore } from '../../lib/stores/logs'; // Import logStore
+  import {
+    getMessages,
+    getNextId,
+    getUrlId,
+    openDatabase,
+    setMessages,
+    duplicateChat,
+    createChatFromMessages,
+  } from './db';
+  import { saveMessage, saveChatHistory } from '../../components/chat/firebaseService';
+import { auth } from '../../lib/webcontainer/auth.client';
 
 export interface ChatHistoryItem {
   id: string;
@@ -23,7 +25,7 @@ export interface ChatHistoryItem {
   timestamp: string;
 }
 
-const persistenceEnabled = !import.meta.env.VITE_DISABLE_PERSISTENCE;
+const persistenceEnabled = !process.env.VITE_DISABLE_PERSISTENCE;
 
 export const db = persistenceEnabled ? await openDatabase() : undefined;
 
@@ -110,6 +112,7 @@ export function useChatHistory() {
       }
 
       await setMessages(db, chatId.get() as string, messages, urlId, description.get());
+      await saveChatHistory(chatId.get() as string, messages);
     },
     duplicateCurrentChat: async (listItemId: string) => {
       if (!db || (!mixedId && !listItemId)) {
