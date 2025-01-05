@@ -38,7 +38,7 @@ export async function getChatsFromFirebase(): Promise<ChatHistoryItem[]> {
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
       if (data.messages && data.timestamp) {
-        return { id: doc.id, ...data };
+        return { id: doc.id, messages: data.messages, timestamp: data.timestamp, urlId: data.urlId, description: data.description };
       } else {
         console.warn(`Incomplete chat data for document ID ${doc.id}, skipping.`);
         return null;
@@ -57,7 +57,7 @@ export async function getChatFromFirebase(id: string): Promise<ChatHistoryItem |
   if (docSnap.exists()) {
     const data = docSnap.data();
     if (data.messages && data.timestamp) {
-      return { id: docSnap.id, ...data };
+      return { id: docSnap.id, messages: data.messages, timestamp: data.timestamp, urlId: data.urlId, description: data.description };
     } else {
       console.warn(`Incomplete chat data for document ID ${docSnap.id}, skipping.`);
       return null;
@@ -65,5 +65,14 @@ export async function getChatFromFirebase(id: string): Promise<ChatHistoryItem |
   } else {
     console.log("No such document!");
     return null;
+  }
+}
+
+export async function saveChatHistory(chatId: string, messages: Message[]): Promise<void> {
+  try {
+    await addDoc(collection(db, "chatHistory"), { chatId, messages });
+  } catch (error) {
+    console.error("Error saving chat history to Firebase:", error);
+    throw error;
   }
 }
