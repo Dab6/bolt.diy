@@ -110,7 +110,15 @@ export function useChatHistory() {
       }
 
       await setMessages(db, chatId.get() as string, messages, urlId, description.get());
-      await saveChatHistory(chatId.get() as string, messages);
+      try {
+        if (chatId.get() && messages) {
+          await saveChatHistory(chatId.get() as string, messages);
+        } else {
+          console.warn('Cannot save chat history. chatId or messages are missing.', { chatId: chatId.get(), messages });
+        }
+      } catch (error) {
+        console.error('Error saving chat history to Firebase:', error);
+      }
     },
     duplicateCurrentChat: async (listItemId: string) => {
       if (!db || (!mixedId && !listItemId)) {
