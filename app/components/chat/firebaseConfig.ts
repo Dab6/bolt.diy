@@ -1,9 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, push, onValue } from "firebase/database";
+// import { getDatabase, ref, push, onValue } from "firebase/database";  //Removed as not needed
 
 // Your web app's Firebase configuration
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
   projectId: process.env.FIREBASE_PROJECT_ID,
@@ -13,10 +13,10 @@ const firebaseConfig = {
   measurementId: process.env.FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase - Removed as this is handled in useChatHistory.ts
+// const app = initializeApp(firebaseConfig);
 
-// Initialize Realtime Database and get a reference to the service
-const database = getDatabase(app);
+// Initialize Realtime Database and get a reference to the service - Removed as not needed
+// const database = getDatabase(app);
 
-export const chatHistoryRef = ref(database, 'chatHistory');
+// export const chatHistoryRef = ref(database, 'chatHistory'); //Removed as not needed
