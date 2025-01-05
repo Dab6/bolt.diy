@@ -8,22 +8,22 @@ import { useChat } from 'ai/react';
 import { useAnimate } from 'framer-motion';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { cssTransition, toast, ToastContainer } from 'react-toastify';
-import { useMessageParser, usePromptEnhancer, useShortcuts, useSnapScroll } from '~/lib/hooks';
-import { description, useChatHistory } from '~/lib/persistence';
-import { chatStore } from '~/lib/stores/chat';
-import { workbenchStore } from '~/lib/stores/workbench';
-import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROMPT_COOKIE_KEY, PROVIDER_LIST } from '~/utils/constants';
-import { cubicEasingFn } from '~/utils/easings';
-import { createScopedLogger, renderLogger } from '~/utils/logger';
+import { useMessageParser, usePromptEnhancer, useShortcuts, useSnapScroll } from '../../lib/hooks';
+import { description, useChatHistory } from '../../lib/persistence';
+import { chatStore } from '../../lib/stores/chat';
+import { workbenchStore } from '../../lib/stores/workbench';
+import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROMPT_COOKIE_KEY, PROVIDER_LIST } from '../../utils/constants';
+import { cubicEasingFn } from '../../utils/easings';
+import { createScopedLogger, renderLogger } from '../../utils/logger';
 import { BaseChat } from './BaseChat';
 import Cookies from 'js-cookie';
-import { debounce } from '~/utils/debounce';
-import { useSettings } from '~/lib/hooks/useSettings';
-import type { ProviderInfo } from '~/types/model';
+import { debounce } from '../../utils/debounce';
+import { useSettings } from '../../lib/hooks/useSettings';
+import type { ProviderInfo } from '../../types/model';
 import { useSearchParams } from '@remix-run/react';
-import { createSampler } from '~/utils/sampler';
-import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
-import { saveMessage } from './firebaseService';
+import { createSampler } from '../../utils/sampler';
+import { getTemplates, selectStarterTemplate } from '../../utils/selectStarterTemplate';
+
 
 const toastAnimation = cssTransition({
   enter: 'animated fadeInRight',
@@ -115,8 +115,8 @@ export const ChatImpl = memo(
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
-    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]); // Move here
-    const [imageDataList, setImageDataList] = useState<string[]>([]); // Move here
+    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const [imageDataList, setImageDataList] = useState<string[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
     const [fakeLoading, setFakeLoading] = useState(false);
     const files = useStore(workbenchStore.files);
@@ -170,8 +170,6 @@ export const ChatImpl = memo(
     useEffect(() => {
       const prompt = searchParams.get('prompt');
 
-      // console.log(prompt, searchParams, model, provider);
-
       if (prompt) {
         setSearchParams({});
         runAnimation();
@@ -182,7 +180,7 @@ export const ChatImpl = memo(
               type: 'text',
               text: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${prompt}`,
             },
-          ] as any, // Type assertion to bypass compiler check
+          ] as any,
         });
       }
     }, [model, provider, searchParams]);
@@ -255,13 +253,6 @@ export const ChatImpl = memo(
         return;
       }
 
-      /**
-       * @note (delm) Usually saving files shouldn't take long but it may take longer if there
-       * many unsaved files. In that case we need to block user input and show an indicator
-       * of some kind so the user is aware that something is happening. But I consider the
-       * happy case to be no unsaved files and I would expect users to save their changes
-       * before they send another message.
-       */
       await workbenchStore.saveAllFiles();
 
       const fileModifications = workbenchStore.getFileModifcations();
@@ -285,11 +276,9 @@ export const ChatImpl = memo(
                 type: 'image',
                 image: imageData,
               })),
-            ] as any, // Type assertion to bypass compiler check
+            ] as any,
           },
         ]);
-
-        // reload();
 
         const { template, title } = await selectStarterTemplate({
           message: messageInput,
@@ -316,8 +305,6 @@ export const ChatImpl = memo(
                 id: `${new Date().getTime()}`,
                 role: 'user',
                 content: messageInput,
-
-                // annotations: ['hidden'],
               },
               {
                 id: `${new Date().getTime()}`,
@@ -350,7 +337,7 @@ export const ChatImpl = memo(
                     type: 'image',
                     image: imageData,
                   })),
-                ] as any, // Type assertion to bypass compiler check
+                ] as any,
               },
             ]);
             reload();
@@ -372,7 +359,7 @@ export const ChatImpl = memo(
                   type: 'image',
                   image: imageData,
                 })),
-              ] as any, // Type assertion to bypass compiler check
+              ] as any,
             },
           ]);
           reload();
@@ -383,13 +370,6 @@ export const ChatImpl = memo(
       }
 
       if (fileModifications !== undefined) {
-        /**
-         * If we have file modifications we append a new user message manually since we have to prefix
-         * the user input with the file modifications and we don't want the new user input to appear
-         * in the prompt. Using `append` is almost the same as `handleSubmit` except that we have to
-         * manually reset the input and we'd have to manually pass in file attachments. However, those
-         * aren't relevant here.
-         */
         append({
           role: 'user',
           content: [
@@ -401,13 +381,9 @@ export const ChatImpl = memo(
               type: 'image',
               image: imageData,
             })),
-          ] as any, // Type assertion to bypass compiler check
+          ] as any,
         });
 
-        /**
-         * After sending a new message we reset all modifications since the model
-         * should now be aware of all the changes.
-         */
         workbenchStore.resetAllFileModifications();
       } else {
         append({
@@ -421,14 +397,13 @@ export const ChatImpl = memo(
               type: 'image',
               image: imageData,
             })),
-          ] as any, // Type assertion to bypass compiler check
+          ] as any,
         });
       }
 
       setInput('');
       Cookies.remove(PROMPT_COOKIE_KEY);
 
-      // Add file cleanup here
       setUploadedFiles([]);
       setImageDataList([]);
 
@@ -437,18 +412,10 @@ export const ChatImpl = memo(
       textareaRef.current?.blur();
     };
 
-    /**
-     * Handles the change event for the textarea and updates the input state.
-     * @param event - The change event from the textarea.
-     */
     const onTextareaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
       handleInputChange(event);
     };
 
-    /**
-     * Debounced function to cache the prompt in cookies.
-     * Caches the trimmed value of the textarea input after a delay to optimize performance.
-     */
     const debouncedCachePrompt = useCallback(
       debounce((event: React.ChangeEvent<HTMLTextAreaElement>) => {
         const trimmedValue = event.target.value.trim();
