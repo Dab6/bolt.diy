@@ -1,5 +1,5 @@
 import { chatHistoryRef } from './firebaseConfig';
-import { push, onValue } from "firebase/database";
+import { push, onValue, ref, set, getDatabase } from "firebase/database";
 
 export const saveMessage = async (userId: string, message: string, sender: 'user' | 'assistant') => {
   try {
@@ -11,6 +11,16 @@ export const saveMessage = async (userId: string, message: string, sender: 'user
     });
   } catch (error) {
     console.error("Error saving message to Firebase:", error);
+  }
+};
+
+export const saveChatHistory = async (chatId: string, messages: any[]) => {
+  try {
+    const db = getDatabase();
+    const chatRef = ref(db, `chatHistory/${chatId}`);
+    await set(chatRef, { messages });
+  } catch (error) {
+    console.error("Error saving chat history to Firebase:", error);
   }
 };
 
