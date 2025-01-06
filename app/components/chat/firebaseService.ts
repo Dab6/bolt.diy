@@ -19,8 +19,8 @@ export async function addChatToFirebase(id: string, messages: Message[], urlId: 
     const chatData = {
       id,
       messages,
-      urlId,
-      description,
+      urlId: urlId || null,
+      description: description || null,
       timestamp: timestamp ? new Date(timestamp).toISOString() : new Date().toISOString()
     };
     const docRef = await addDoc(chatHistoryCollection, chatData);
@@ -68,8 +68,20 @@ export async function getChatFromFirebase(id: string): Promise<ChatHistoryItem |
   }
 }
 
-export async function saveChatHistory(chatId: string, messages: Message[]): Promise<void> {
+export async function saveChatHistory(chatId: string | undefined, messages: Message[] | undefined): Promise<void> {
+  if (!chatId || !messages) {
+    console.error("Error saving chat history: chatId or messages is undefined");
+    return;
+  }
   try {
+    if (chatId === undefined) {
+      console.error("Error saving chat history: chatId is undefined");
+      return;
+    }
+    if (messages === undefined) {
+      console.error("Error saving chat history: messages is undefined");
+      return;
+    }
     await addDoc(collection(db, "chatHistory"), { chatId, messages });
   } catch (error) {
     console.error("Error saving chat history to Firebase:", error);
